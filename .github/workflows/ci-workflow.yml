@@ -16,13 +16,14 @@ env:
 
 
 jobs:
-  run-tests:
-    # The runner is the temporary machine that executes the steps below.
+
+  build-package:
+    # Use a fresh GitHub-hosted runner for the build.
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
-        # Download the repository contents onto the runner.
+        # Get the repository files onto the runner.
         uses: actions/checkout@v6
 
       - name: Set up Python
@@ -35,15 +36,6 @@ jobs:
         # This is the key verification step in the CI workflow.
         run: python -m unittest discover -s tests -v
 
-  build-package:
-    needs: run-tests 
-    # Use a fresh GitHub-hosted runner for the build.
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        # Get the repository files onto the runner.
-        uses: actions/checkout@v6
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
