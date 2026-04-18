@@ -74,5 +74,5 @@ jobs:
           path: ${{ env.IMAGE_TAR }}
           retention-days: 7
 
-      - run: sleep 240
+      - run: sleep 30
 
