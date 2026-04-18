@@ -39,7 +39,7 @@ jobs:
       - name: Set image URI
         id: image
         run: |
-          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ steps.image-tag.outputs.image_tag }}"
+          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest"
           echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
           echo "Using image: $IMAGE_URI"
 
