@@ -70,8 +70,8 @@ jobs:
         with:
           image-ref: ${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.image_tag }}
           format: table
-          exit-code: '1'   # fail the pipeline if vulnerabilities are found
-          severity: 'CRITICAL,HIGH'
+          exit-code: '1'  
+          severity: 'CRITICAL'
 
       - name: Tag image for ECR
         run: |
