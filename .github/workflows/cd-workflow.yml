@@ -6,6 +6,8 @@ on:
       - main
     types: [closed]
 
+  workflow_dispatch:
+
 env:
   IMAGE_NAME: tiny-health-app
   IMAGE_TAR: tiny-health-app.tar
@@ -26,49 +28,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: CONTAINER_NAME,APP_PORT
+          script: |
+            IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest"
 
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v2
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+              docker login --username AWS --password-stdin \
+              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-      - name: Set image URI
-        id: image
-        run: |
-          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest"
-          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
-          echo "Using image: $IMAGE_URI"
+            docker pull "$IMAGE_URI"
 
-      - name: Pull image from ECR
-        run: |
-          docker pull ${{ steps.image.outputs.image_uri }}
+            docker rm -f "${CONTAINER_NAME}" || true
 
-      - name: Start container
-        # Start the exact same tagged image that the build workflow created.
-        run: |
-          docker run -d \
-            --name "${CONTAINER_NAME}" \
-            -p "${APP_PORT}:8000" \
-            ${{ steps.image.outputs.image_uri }}
+            docker run -d \
+              --name "${CONTAINER_NAME}" \
+              --restart unless-stopped \
+              -p "${APP_PORT}:8000" \
+              "$IMAGE_URI"
 
-      - name: Smoke test deployed app
-        # Retry a few times because app startup can take a moment.
-        run: |
-          for attempt in 1 2 3 4 5; do
-            if curl --fail --silent "http://127.0.0.1:${APP_PORT}/health"; then
-              exit 0
-            fi
-            echo "Waiting for app to become ready..."
-            sleep 2
-          done
-          echo "App did not become ready in time."
-          exit 1
-
-      - name: Stop container
-        if: always()
-        # Clean up even if an earlier step fails.
-        run: docker rm -f "${CONTAINER_NAME}" || true
+            for attempt in 1 2 3 4 5; do
+              if curl --fail --silent "http://127.0.0.1:${APP_PORT}/health"; then
+                exit 0
+              fi
+              echo "Waiting for app to become ready..."
+              sleep 2
+            done
+            echo "App did not become ready in time."
+            exit 1
