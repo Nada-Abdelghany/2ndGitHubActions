@@ -23,7 +23,7 @@ permissions:
 jobs:
   deploy-package:
     # Continue only when the build workflow succeeded.
-    if: github.event.pull_request.merged == true
+    #if: github.event.pull_request.merged == true
     # Use a fresh runner for the deployment simulation.
     runs-on: ubuntu-latest
 
