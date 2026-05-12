@@ -16,7 +16,7 @@ env:
   APP_PORT: "8000"
 
 permissions:
-  ## Read access is enough because this workflow only downloads artifacts and reads repo data.
+  # Read access is enough because this workflow only downloads artifacts and reads repo data.
   actions: read
   contents: read
 
